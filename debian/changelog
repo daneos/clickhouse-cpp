@@ -1,0 +1,8 @@
+clickhouse-cpp (2.5.1-1) UNRELEASED; urgency=medium
+
+  * Added version information to CMakeLists.txt and proper SONAME versioning
+  * Changed (static) dependency linkage to PRIVATE
+  * Changed installation directories
+  * Added export target file
+
+ -- Grzegorz Kowalski <grzegorz.kowalski@ess.eu>  Sat, 12 Apr 2025 09:26:43 +0200

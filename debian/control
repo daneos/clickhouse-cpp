@@ -1,0 +1,24 @@
+Source: clickhouse-cpp
+Section: database
+Priority: optional
+Maintainer: Grzegorz Kowalski <grzegorz.kowalski@ess.eu>
+Build-Depends: debhelper-compat (= 13), cmake (>= 3.0.2), liblz4-dev (>= 1.9.3), libabsl-dev (>= 0~20210324.2)
+Standards-Version: 4.6.0
+Homepage: https://clickhouse.com/
+Vcs-Git: https://github.com/ClickHouse/clickhouse-cpp.git
+Vcs-Browser: https://github.com/ClickHouse/clickhouse-cpp
+Rules-Requires-Root: no
+
+Package: clickhouse-cpp
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ClickHouse C++ client library
+ This package contains shared library for ClickHouse database client.
+
+Package: clickhouse-cpp-dev
+Section: libdevel
+Architecture: any
+Depends: clickhouse-cpp (= ${binary:Version}), ${misc:Depends}
+Description: ClickHouse C++ client library - development files
+ This package contains headers for development using ClickHouse database C++
+ client library.

@@ -1,0 +1,13 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: clickhouse-cpp
+Upstream-Contact: Vasily Nemkov <v.nemkov@gmail.com>
+Source: https://github.com/ClickHouse/clickhouse-cpp
+
+Files: *
+Copyright: 2018-2023 ClickHouse, Inc.
+           2017 Pavel Artemkin
+License: Apache-2.0
+
+Files: debian/*
+Copyright: 2025 Grzegorz Kowalski <grzegorz.kowalski@ess.eu>
+License: MIT
