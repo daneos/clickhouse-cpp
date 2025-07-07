@@ -18,7 +18,7 @@ Description: ClickHouse C++ client library
 Package: clickhouse-cpp-dev
 Section: libdevel
 Architecture: any
-Depends: clickhouse-cpp (= ${binary:Version}), ${misc:Depends}
+Depends: clickhouse-cpp (= ${binary:Version}), libabsl-dev (>= 0~20210324.2), ${misc:Depends}
 Description: ClickHouse C++ client library - development files
  This package contains headers for development using ClickHouse database C++
  client library.
