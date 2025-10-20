@@ -2,7 +2,7 @@ Source: clickhouse-cpp
 Section: database
 Priority: optional
 Maintainer: Grzegorz Kowalski <grzegorz.kowalski@ess.eu>
-Build-Depends: debhelper-compat (= 13), cmake (>= 3.0.2), liblz4-dev (>= 1.9.3), libabsl-dev (>= 0~20210324.2)
+Build-Depends: debhelper-compat (= 13), cmake (>= 3.0.2), liblz4-dev (>= 1.9.3), libabsl-dev (>= 0~20210324.2), libzstd-dev (>= 1.4.8+dfsg-3build1)
 Standards-Version: 4.6.0
 Homepage: https://clickhouse.com/
 Vcs-Git: https://github.com/ClickHouse/clickhouse-cpp.git
