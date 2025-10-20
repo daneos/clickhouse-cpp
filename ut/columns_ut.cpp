@@ -104,6 +104,16 @@ TEST(ColumnsCase, FixedString_Append_LargeString) {
     EXPECT_ANY_THROW(col->Append("this is a long string"));
 }
 
+TEST(ColumnsCase, FixedString_Type_Size_Eq0) {
+    const auto col = std::make_shared<ColumnFixedString>(0);
+    ASSERT_EQ(col->FixedSize(), col->Type()->As<FixedStringType>()->GetSize());
+}
+
+TEST(ColumnsCase, FixedString_Type_Size_Eq10) {
+    const auto col = std::make_shared<ColumnFixedString>(10);
+    ASSERT_EQ(col->FixedSize(), col->Type()->As<FixedStringType>()->GetSize());
+}
+
 TEST(ColumnsCase, StringInit) {
     auto values = MakeStrings();
     auto col = std::make_shared<ColumnString>(values);
@@ -185,6 +195,17 @@ TEST(ColumnsCase, Date_UInt16_interface) {
     ASSERT_EQ(col1->RawAt(1), 1234u);
 }
 
+TEST(ColumnsCase, Date_UInt16_construct_from_rvalue_data) {
+    auto const expected = MakeNumbers<uint16_t>();
+
+    auto data = expected;
+    auto col1 = std::make_shared<ColumnDate>(std::move(data));
+
+    ASSERT_EQ(col1->Size(), expected.size());
+    for (size_t i = 0; i < expected.size(); ++i) {
+        ASSERT_EQ(col1->RawAt(i), expected[i]);
+    }
+}
 
 TEST(ColumnsCase, Date32_Int32_interface) {
     auto col1 = std::make_shared<ColumnDate32>();
@@ -199,6 +220,26 @@ TEST(ColumnsCase, Date32_Int32_interface) {
     ASSERT_EQ(col1->RawAt(2), -1234);
 }
 
+TEST(ColumnsCase, Date32_construct_from_rvalue_data) {
+    auto const expected = MakeNumbers<int32_t>();
+
+    auto data = expected;
+    auto col1 = std::make_shared<ColumnDate32>(std::move(data));
+
+    ASSERT_EQ(col1->Size(), expected.size());
+    for (size_t i = 0; i < expected.size(); ++i) {
+        ASSERT_EQ(col1->RawAt(i), expected[i]);
+    }
+}
+
+TEST(ColumnsCase, DateTime_construct_from_rvalue_data) {
+    auto const expected = MakeNumbers<uint32_t>();
+
+    auto data = expected;
+    auto col1 = std::make_shared<ColumnDateTime>(std::move(data));
+
+    EXPECT_TRUE(CompareRecursive(*col1, expected));
+}
 
 TEST(ColumnsCase, DateTime64_0) {
     auto column = std::make_shared<ColumnDateTime64>(0ul);
@@ -442,6 +483,28 @@ TEST(ColumnsCase, Int128) {
     EXPECT_EQ(0, col->At(4));
 }
 
+TEST(ColumnsCase, UInt128) {
+    auto col = std::make_shared<ColumnUInt128>(std::vector<UInt128>{
+            absl::MakeUint128(0xffffffffffffffffll, 0xffffffffffffffffll), // 2^128 - 1
+            absl::MakeUint128(0, 0xffffffffffffffffll),  // 2^64 - 1
+            absl::MakeUint128(0xffffffffffffffffll, 0),  // 2^128 - 2^64
+            absl::MakeUint128(0x8000000000000000ll, 0),
+            UInt128(0)
+    });
+
+    EXPECT_EQ(absl::MakeUint128(0xffffffffffffffffll, 0xffffffffffffffffll), col->At(0));
+
+    EXPECT_EQ(absl::MakeUint128(0, 0xffffffffffffffffll), col->At(1));
+    EXPECT_EQ(0ull,                  absl::Uint128High64(col->At(1)));
+    EXPECT_EQ(0xffffffffffffffffull, absl::Uint128Low64(col->At(1)));
+
+    EXPECT_EQ(absl::MakeUint128(0xffffffffffffffffll, 0), col->At(2));
+    EXPECT_EQ(static_cast<uint64_t>(0xffffffffffffffffull),  absl::Uint128High64(col->At(2)));
+    EXPECT_EQ(0ull,                  absl::Uint128Low64(col->At(2)));
+
+    EXPECT_EQ(0, col->At(4));
+}
+
 TEST(ColumnsCase, ColumnIPv4)
 {
     // TODO: split into proper method-level unit-tests
@@ -526,6 +589,23 @@ TEST(ColumnsCase, ColumnIPv4_construct_from_data)
 
     EXPECT_ANY_THROW(ColumnIPv4(ColumnRef(std::make_shared<ColumnInt128>())));
     EXPECT_ANY_THROW(ColumnIPv4(ColumnRef(std::make_shared<ColumnString>())));
+}
+
+TEST(ColumnsCase, ColumnIPv4_construct_from_rvalue_data) {
+    std::vector<uint32_t> data = {
+        0x12345678,
+        0x0,
+        0x0100007f,
+    };
+
+    const auto expected = {
+        MakeIPv4(data[0]),
+        MakeIPv4(data[1]),
+        MakeIPv4(data[2]),
+    };
+
+    auto col = ColumnIPv4(std::move(data));
+    EXPECT_TRUE(CompareRecursive(col, expected));
 }
 
 TEST(ColumnsCase, ColumnIPv6)
@@ -818,6 +898,12 @@ TEST(ColumnsCase, ColumnLowCardinalityString_WithEmptyString_3) {
     }
 }
 
+TEST(ColumnsCase, ColumnLowCardinalityFixedString_Type_Size_Eq) {
+    const size_t fixed_size = 10;
+    const auto col          = std::make_shared<ColumnLowCardinalityT<ColumnFixedString>>(fixed_size);
+    
+    ASSERT_EQ(fixed_size, col->GetNestedType()->As<FixedStringType>()->GetSize());
+}
 
 TEST(ColumnsCase, ColumnTupleT) {
     using TestTuple = ColumnTupleT<ColumnUInt64, ColumnString, ColumnFixedString>;

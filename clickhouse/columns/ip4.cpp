@@ -19,6 +19,15 @@ ColumnIPv4::ColumnIPv4(ColumnRef data)
         throw ValidationError("Expecting ColumnUInt32, got " + (data ? data->GetType().GetName() : "null"));
 }
 
+ColumnIPv4::ColumnIPv4(std::vector<uint32_t>&& data)
+    : Column(Type::CreateIPv4())
+{
+    for (auto& addr : data) {
+        addr = htonl(addr);
+    }
+    data_ = std::make_shared<ColumnUInt32>(std::move(data));
+}
+
 void ColumnIPv4::Append(const std::string& str) {
     uint32_t address;
     if (inet_pton(AF_INET, str.c_str(), &address) != 1)
@@ -52,9 +61,10 @@ in_addr ColumnIPv4::operator [] (size_t n) const {
 
 std::string ColumnIPv4::AsString(size_t n) const {
     const auto& addr = this->At(n);
+    auto tmp_addr = addr;
 
     char buf[INET_ADDRSTRLEN];
-    const char* ip_str = inet_ntop(AF_INET, &addr, buf, INET_ADDRSTRLEN);
+    const char* ip_str = inet_ntop(AF_INET, &tmp_addr, buf, INET_ADDRSTRLEN);
 
     if (ip_str == nullptr) {
         throw std::system_error(
@@ -63,6 +73,10 @@ std::string ColumnIPv4::AsString(size_t n) const {
     }
 
     return ip_str;
+}
+
+void ColumnIPv4::Reserve(size_t new_cap) {
+    data_->Reserve(new_cap);
 }
 
 void ColumnIPv4::Append(ColumnRef column) {

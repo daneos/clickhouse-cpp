@@ -39,6 +39,21 @@ void ColumnVector<T>::Erase(size_t pos, size_t count) {
 }
 
 template <typename T>
+std::vector<T>& ColumnVector<T>::GetWritableData() {
+    return data_;
+}
+
+template <typename T>
+void ColumnVector<T>::Reserve(size_t new_cap) {
+    data_.reserve(new_cap);
+}
+
+template <typename T>
+size_t ColumnVector<T>::Capacity() const {
+    return data_.capacity();
+}
+
+template <typename T>
 void ColumnVector<T>::Clear() {
     data_.clear();
 }
@@ -103,6 +118,7 @@ template class ColumnVector<uint16_t>;
 template class ColumnVector<uint32_t>;
 template class ColumnVector<uint64_t>;
 template class ColumnVector<Int128>;
+template class ColumnVector<UInt128>;
 
 template class ColumnVector<float>;
 template class ColumnVector<double>;

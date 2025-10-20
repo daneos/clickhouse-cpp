@@ -19,6 +19,9 @@ public:
     explicit ColumnVector(const std::vector<T>& data);
     explicit ColumnVector(std::vector<T> && data);
 
+    /// Increase the capacity of the column for large block insertion.
+    void Reserve(size_t new_cap) override;
+
     /// Appends one element to the end of column.
     void Append(const T& value);
 
@@ -29,6 +32,12 @@ public:
     inline const T& operator [] (size_t n) const { return At(n); }
 
     void Erase(size_t pos, size_t count = 1);
+
+    /// Get Raw Vector Contents
+    std::vector<T>& GetWritableData();
+
+    /// Returns the capacity of the column
+    size_t Capacity() const;
 
 public:
     /// Appends content of given column to the end of current one.
@@ -58,12 +67,14 @@ private:
 };
 
 using Int128 = absl::int128;
+using UInt128 = absl::uint128;
 using Int64 = int64_t;
 
 using ColumnUInt8   = ColumnVector<uint8_t>;
 using ColumnUInt16  = ColumnVector<uint16_t>;
 using ColumnUInt32  = ColumnVector<uint32_t>;
 using ColumnUInt64  = ColumnVector<uint64_t>;
+using ColumnUInt128 = ColumnVector<UInt128>;
 
 using ColumnInt8    = ColumnVector<int8_t>;
 using ColumnInt16   = ColumnVector<int16_t>;

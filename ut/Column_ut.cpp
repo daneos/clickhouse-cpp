@@ -16,10 +16,14 @@
 #include <clickhouse/client.h>
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <initializer_list>
 #include <memory>
 #include <type_traits>
 
+#include "gtest/internal/gtest-internal.h"
+#include "ut/utils_comparison.h"
+#include "ut/utils_meta.h"
 #include "utils.h"
 #include "roundtrip_column.h"
 #include "value_generators.h"
@@ -203,6 +207,7 @@ using TestCases = ::testing::Types<
     GenericColumnTestCase<ColumnIPv6, &makeColumn<ColumnIPv6>, in6_addr, &MakeIPv6s>,
 
     GenericColumnTestCase<ColumnInt128, &makeColumn<ColumnInt128>, clickhouse::Int128, &MakeInt128s>,
+    GenericColumnTestCase<ColumnUInt128, &makeColumn<ColumnUInt128>, clickhouse::UInt128, &MakeUInt128s>,
     GenericColumnTestCase<ColumnUUID, &makeColumn<ColumnUUID>, clickhouse::UUID, &MakeUUIDs>,
 
     DecimalColumnTestCase<ColumnDecimal, 18, 0>,
@@ -282,7 +287,7 @@ inline auto convertValueForGetItem(const ColumnType& col, ValueType&& t) {
         // Since ColumnDecimal can hold 32, 64, 128-bit wide data and there is no way telling at run-time.
         const ItemView item = col.GetItem(0);
         return std::string_view(reinterpret_cast<const char*>(&t), item.data.size());
-    } else if constexpr (std::is_same_v<T, clickhouse::UInt128>
+    } else if constexpr (std::is_same_v<T, clickhouse::UInt128> || std::is_same_v<T, clickhouse::UUID>
             || std::is_same_v<T, clickhouse::Int128>) {
         return std::string_view{reinterpret_cast<const char*>(&t), sizeof(T)};
     } else if constexpr (std::is_same_v<T, in_addr>) {
@@ -364,6 +369,58 @@ TYPED_TEST(GenericColumnTest, Swap) {
     EXPECT_TRUE(CompareRecursive(values, *column_B));
 }
 
+// GTEST_SKIP for debug builds to draw attention of developer
+#if !defined(NDEBUG)
+#define COLUMN_DOESNT_IMPLEMENT(comment) GTEST_SKIP() << this->MakeColumn()->GetType().GetName() << " doesn't implement " << comment;
+#else
+#define COLUMN_DOESNT_IMPLEMENT(comment) GTEST_SUCCEED() << this->MakeColumn()->GetType().GetName() << " doesn't implement " << comment;
+#endif
+
+TYPED_TEST(GenericColumnTest, ReserveAndCapacity) {
+    using column_type = typename TestFixture::ColumnType;
+    auto [column0, values] = this->MakeColumnWithValues(2);
+    auto values_copy = values;
+    EXPECT_NO_THROW(column0->Reserve(0u));
+    EXPECT_EQ(2u, column0->Size());
+    EXPECT_TRUE(CompareRecursive(values, values_copy));
+
+    auto column1 = this->MakeColumn();
+    column1->Reserve(10u);
+    EXPECT_EQ(0u, column1->Size());
+
+    if constexpr (has_method_Reserve_v<column_type> && has_method_Capacity_v<column_type>) {
+        auto column = this->MakeColumn();
+        EXPECT_EQ(0u, column->Capacity());
+        EXPECT_NO_THROW(column->Reserve(100u));
+        EXPECT_EQ(100u, column->Capacity());
+        EXPECT_EQ(0u, column->Size());
+    }
+    else {
+        COLUMN_DOESNT_IMPLEMENT("method Reserve() and Capacity()");
+    }
+}
+
+
+TYPED_TEST(GenericColumnTest, GetWritableData) {
+    if constexpr (has_method_GetWritableData_v<typename TestFixture::ColumnType>) {
+        auto [column, values] = this->MakeColumnWithValues(111);
+        // Do conversion from time_t to internal representation, similar to what ColumnDate and ColumnDate32 do
+        if constexpr (is_one_of_v<typename TestFixture::ColumnType,
+                    ColumnDate,
+                    ColumnDate32>) {
+            std::for_each(values.begin(), values.end(), [](auto & value) {
+                value /= 86400;
+            });
+        }
+
+        EXPECT_TRUE(CompareRecursive(values, column->GetWritableData()));
+    }
+    else {
+        COLUMN_DOESNT_IMPLEMENT("method GetWritableData()");
+    }
+}
+
+
 TYPED_TEST(GenericColumnTest, LoadAndSave) {
     auto [column_A, values] = this->MakeColumnWithValues(100);
 
@@ -396,7 +453,8 @@ const auto LocalHostEndpoint = ClientOptions()
 
 const auto AllCompressionMethods = {
     clickhouse::CompressionMethod::None,
-    clickhouse::CompressionMethod::LZ4
+    clickhouse::CompressionMethod::LZ4,
+    clickhouse::CompressionMethod::ZSTD
 };
 
 TYPED_TEST(GenericColumnTest, RoundTrip) {

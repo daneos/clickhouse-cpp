@@ -44,9 +44,10 @@ void ColumnIPv6::Clear() {
 
 std::string ColumnIPv6::AsString (size_t n) const {
     const auto& addr = this->At(n);
+    auto tmp_addr = addr;
 
     char buf[INET6_ADDRSTRLEN];
-    const char* ip_str = inet_ntop(AF_INET6, &addr, buf, INET6_ADDRSTRLEN);
+    const char* ip_str = inet_ntop(AF_INET6, &tmp_addr, buf, INET6_ADDRSTRLEN);
 
     if (ip_str == nullptr) {
         throw std::system_error(
@@ -63,6 +64,10 @@ in6_addr ColumnIPv6::At(size_t n) const {
 
 in6_addr ColumnIPv6::operator [] (size_t n) const {
     return *reinterpret_cast<const in6_addr*>(data_->At(n).data());
+}
+
+void ColumnIPv6::Reserve(size_t new_cap) {
+    data_->Reserve(new_cap);
 }
 
 void ColumnIPv6::Append(ColumnRef column) {

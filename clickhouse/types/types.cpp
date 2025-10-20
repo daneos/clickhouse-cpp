@@ -39,6 +39,7 @@ const char* Type::TypeName(Type::Code code) {
         case Type::Code::IPv4:           return "IPv4";
         case Type::Code::IPv6:           return "IPv6";
         case Type::Code::Int128:         return "Int128";
+        case Type::Code::UInt128:        return "UInt128";
         case Type::Code::Decimal:        return "Decimal";
         case Type::Code::Decimal32:      return "Decimal32";
         case Type::Code::Decimal64:      return "Decimal64";
@@ -68,6 +69,7 @@ std::string Type::GetName() const {
         case UInt16:
         case UInt32:
         case UInt64:
+        case UInt128:
         case UUID:
         case Float32:
         case Float64:
@@ -126,6 +128,7 @@ uint64_t Type::GetTypeUniqueId() const {
         case UInt16:
         case UInt32:
         case UInt64:
+        case UInt128:
         case UUID:
         case Float32:
         case Float64:
@@ -161,9 +164,9 @@ uint64_t Type::GetTypeUniqueId() const {
             //   1. going to be the same
             //   2. going to be stored atomically
 
-            if (type_unique_id_.load(std::memory_order::memory_order_relaxed) == 0) {
+            if (type_unique_id_.load(std::memory_order_relaxed) == 0) {
                 const auto name = GetName();
-                type_unique_id_.store(CityHash64WithSeed(name.c_str(), name.size(), code_), std::memory_order::memory_order_relaxed);
+                type_unique_id_.store(CityHash64WithSeed(name.c_str(), name.size(), code_), std::memory_order_relaxed);
             }
 
             return type_unique_id_;

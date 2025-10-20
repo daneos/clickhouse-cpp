@@ -129,10 +129,10 @@ void SetNonBlock(SOCKET fd, bool value) {
 
 void SetTimeout(SOCKET fd, const SocketTimeoutParams& timeout_params) {
 #if defined(_unix_)
-    timeval recv_timeout{ timeout_params.recv_timeout.count() / 1000, static_cast<int>(timeout_params.recv_timeout.count() % 1000 * 1000) };
+    timeval recv_timeout{ static_cast<time_t>(timeout_params.recv_timeout.count() / 1000), static_cast<suseconds_t>(timeout_params.recv_timeout.count() % 1000 * 1000) };
     auto recv_ret = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout, sizeof(recv_timeout));
 
-    timeval send_timeout{ timeout_params.send_timeout.count() / 1000, static_cast<int>(timeout_params.send_timeout.count() % 1000 * 1000) };
+    timeval send_timeout{ static_cast<time_t>(timeout_params.send_timeout.count() / 1000), static_cast<suseconds_t>(timeout_params.send_timeout.count() % 1000 * 1000) };
     auto send_ret = setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &send_timeout, sizeof(send_timeout));
 
     if (recv_ret == -1 || send_ret == -1) {
@@ -457,11 +457,12 @@ size_t SocketOutput::DoWrite(const void* data, size_t len) {
     static const int flags = 0;
 #endif
 
-    if (::send(s_, (const char*)data, (int)len, flags) != (int)len) {
+    const ssize_t ret = ::send(s_, (const char*)data, (int)len, flags);
+    if (ret < 0) {
         throw std::system_error(getSocketErrorCode(), getErrorCategory(), "fail to send " + std::to_string(len) + " bytes of data");
     }
 
-    return len;
+    return (size_t)ret;
 }
 
 

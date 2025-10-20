@@ -89,7 +89,7 @@ if (MSVC)
     # remove in 3.0
     add_compile_options(/wd4996)
 else()
-    set(cxx_extra_wall "-Wempty-body -Wconversion -Wreturn-type -Wparentheses -Wuninitialized -Wunreachable-code -Wunused-function -Wunused-value -Wunused-variable")   
+    set(cxx_extra_wall "-Wempty-body -Wconversion -Wreturn-type -Wparentheses -Wuninitialized -Wunreachable-code -Wunused-function -Wunused-value -Wunused-variable")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${cxx_extra_wall}")
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -110,12 +110,18 @@ IF (NOT CMAKE_INSTALL_INCLUDEDIR)
     SET (CMAKE_INSTALL_INCLUDEDIR include)
 ENDIF ()
 
-ADD_LIBRARY (clickhouse-cpp-lib ${clickhouse-cpp-lib-src})
-SET_TARGET_PROPERTIES (clickhouse-cpp-lib PROPERTIES LINKER_LANGUAGE CXX)
+ADD_LIBRARY (clickhouse-cpp-lib ${clickhouse-cpp-lib-src}
+    version.h)
+SET_TARGET_PROPERTIES (clickhouse-cpp-lib
+    PROPERTIES
+    LINKER_LANGUAGE CXX
+    VERSION ${CLICKHOUSE_CPP_VERSION}
+)
 TARGET_LINK_LIBRARIES (clickhouse-cpp-lib
     PRIVATE absl::int128
     PRIVATE cityhash::cityhash
     PRIVATE lz4::lz4
+    PRIVATE zstd::zstd
 )
 TARGET_INCLUDE_DIRECTORIES (clickhouse-cpp-lib PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
@@ -131,10 +137,16 @@ ENDIF()
 
 IF (NOT BUILD_SHARED_LIBS)
     ADD_LIBRARY (clickhouse-cpp-lib-static ALIAS clickhouse-cpp-lib)
-ENDIF()
+ELSE ()
+    SET_TARGET_PROPERTIES (clickhouse-cpp-lib
+        PROPERTIES
+        SO_VERSION ${CLICKHOUSE_CPP_VERSION}
+        SO_VERSION ${CLICKHOUSE_CPP_VERSION_MAJOR}
+    )
+ENDIF ()
 
 
-IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT DISABLE_CLANG_LIBC_WORKAROUND)
     INCLUDE (CheckCXXSourceCompiles)
 
     CHECK_CXX_SOURCE_COMPILES("#include <bits/c++config.h>\nint main() { return __GLIBCXX__ != 0; }"
@@ -160,6 +172,32 @@ INSTALL (TARGETS clickhouse-cpp-lib EXPORT clickhouse-cpp
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+IF (NOT BUILD_SHARED_LIBS)
+    IF (NOT WITH_SYSTEM_CITYHASH)
+        INSTALL (TARGETS cityhash
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib
+        )
+    ENDIF()
+    IF (NOT WITH_SYSTEM_LZ4)
+        INSTALL (TARGETS lz4
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib
+        )
+    ENDIF()
+    IF (NOT WITH_SYSTEM_ZSTD)
+        INSTALL (TARGETS zstdstatic
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib
+        )
+    ENDIF()
+    IF (NOT WITH_SYSTEM_ABSEIL)
+        INSTALL (TARGETS absl_int128
+            ARCHIVE DESTINATION lib
+            LIBRARY DESTINATION lib
+        )
+    ENDIF()
+ENDIF()
 
 # general
 INSTALL(FILES block.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/)
@@ -169,6 +207,7 @@ INSTALL(FILES exceptions.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/)
 INSTALL(FILES server_exception.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/)
 INSTALL(FILES protocol.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/)
 INSTALL(FILES query.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/)
+INSTALL(FILES version.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/)
 
 # base
 INSTALL(FILES base/buffer.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/base/)
@@ -198,6 +237,7 @@ INSTALL(FILES columns/ip4.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/c
 INSTALL(FILES columns/ip6.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
 INSTALL(FILES columns/itemview.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
 INSTALL(FILES columns/lowcardinality.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
+INSTALL(FILES columns/nothing.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
 INSTALL(FILES columns/nullable.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
 INSTALL(FILES columns/numeric.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
 INSTALL(FILES columns/map.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/clickhouse/columns/)
