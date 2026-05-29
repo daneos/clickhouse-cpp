@@ -17,6 +17,7 @@
 #include "columns/map.h"
 #include "columns/string.h"
 #include "columns/tuple.h"
+#include "columns/time.h"
 #include "columns/uuid.h"
 
 #include <chrono>
@@ -272,6 +273,16 @@ public:
     /// Intends for insert block of data into a table \p table_name.
     void Insert(const std::string& table_name, const Block& block);
     void Insert(const std::string& table_name, const std::string& query_id, const Block& block);
+
+    /// Start an \p INSERT statement, insert batches of data, then finish the insert.
+    Block BeginInsert(const std::string& query);
+    Block BeginInsert(const std::string& query, const std::string& query_id);
+
+    /// Insert data using a \p block returned by \p BeginInsert.
+    void SendInsertBlock(const Block& block);
+
+    /// End an \p INSERT session started by \p BeginInsert.
+    void EndInsert();
 
     /// Ping server for aliveness.
     void Ping();
