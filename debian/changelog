@@ -1,3 +1,9 @@
+clickhouse-cpp (2.6.1-1) UNRELEASED; urgency=medium
+
+  * Updated upstream to 2.6.1
+
+ -- Grzegorz Kowalski <grzegorz.kowalski@ess.eu>  Fri, 29 May 2026 16:19:46 +0200
+
 clickhouse-cpp (2.6.0-1) UNRELEASED; urgency=medium
 
   * Updated upstream to 2.6.0
